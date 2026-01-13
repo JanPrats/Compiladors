@@ -57,7 +57,7 @@ FILE *ofile = NULL; // file handler to send the module's output (to a file or st
 // one intentional mistake as example (comment it out to avoid the program aborting)
 void test_fib() {
     int n = 0;
-    static_assert(MOD2NEGFIBTEST == -5, "MOD2NEGFIBTEST should be -5"); // only for C11, and compile-time check
+    //static_assert(MOD2NEGFIBTEST == -5, "MOD2NEGFIBTEST should be -5"); // only for C11, and compile-time check
 
     fprintf(ofile, "%s\n", MOD2TESTMSG);
     fflush(ofile);
