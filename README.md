@@ -1,11 +1,11 @@
   ## Team leaders of each TM
 
-P1:
-P2:
-P3:
-P4:
-P5:
-P6: 
+P1: Jan 
+P2: Andrea
+P3: Clara
+P4: Marc
+P5: Gorka
+P6: Pol
 
 
 ---
