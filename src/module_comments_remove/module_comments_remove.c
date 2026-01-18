@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include "./module_comments_remove.h"
+#include "../module_parser/parser.h"
+
 
 void module_comments_run(void) {
     printf("Loaded module_comments: comments removal module\n");

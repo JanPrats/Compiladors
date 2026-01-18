@@ -8,6 +8,14 @@
  * macro invocations with their defined replacements.
  */
 
-void module_macros_run(void);
+// Inicialitza el parser amb fitxers d'entrada i sortida
+void    parser_init(FILE *input, FILE *output);
+
+// Bucle principal del parser
+void    parser_run(bool flag_c);
+
+// Funcions que utilitza el module_comments_remove
+char    parser_next_char(void);
+void    parser_copy_char(char c);
 
 #endif

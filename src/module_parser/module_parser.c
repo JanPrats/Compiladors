@@ -1,15 +1,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "./module_parser.h"
+#include "../module_comments_remove/comments_remove.h"
 
-/*
-==========================================================
- INTERFÍCIE DEL MÒDUL DE COMENTARIS
-==========================================================
-El parser NO sap com funcionen els comentaris.
-Només sap que existeix aquesta funció.
-*/
-bool comment_handle(char first, bool flag_c);
 
 /*
 ==========================================================
@@ -23,7 +16,6 @@ static FILE *g_output_file = NULL;
 ==========================================================
  parser_init
 ==========================================================
-Inicialitza el parser amb els fitxers d'entrada i sortida
 */
 void parser_init(FILE *input, FILE *output)
 {
@@ -35,8 +27,6 @@ void parser_init(FILE *input, FILE *output)
 ==========================================================
  parser_next_char
 ==========================================================
-Retorna el següent caràcter del fitxer d’entrada
-i AVANÇA el cursor.
 */
 char parser_next_char(void)
 {
@@ -53,7 +43,6 @@ char parser_next_char(void)
 ==========================================================
  parser_copy_char
 ==========================================================
-Escriu un caràcter al fitxer de sortida
 */
 void parser_copy_char(char c)
 {
@@ -65,10 +54,6 @@ void parser_copy_char(char c)
 ==========================================================
  parser_run
 ==========================================================
-Bucle principal del parser
-
-PARAMETRES:
-- flag_c : indica si s'han de copiar els comentaris (-c)
 */
 void parser_run(bool flag_c)
 {
@@ -76,26 +61,19 @@ void parser_run(bool flag_c)
 
     while ((c = parser_next_char()) != EOF)
     {
-        // Si trobem '/', pot ser inici de comentari
         if (c == '/')
         {
             /*
-            Si comment_handle retorna true:
-            - el mòdul de comentaris ja ha consumit TOT el comentari
-            - el parser NO ha de fer res més
+            Deleguem al mòdul de comentaris
             */
             if (comment_handle(c, flag_c))
                 continue;
 
-            /*
-            No era un comentari
-            → el '/' forma part del codi normal
-            */
+            // No era un comentari
             parser_copy_char(c);
         }
         else
         {
-            // Caràcter normal
             parser_copy_char(c);
         }
     }

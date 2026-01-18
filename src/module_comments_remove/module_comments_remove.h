@@ -9,5 +9,6 @@
  */
 
 void module_comments_run(void);
+bool    comment_handle(char first, bool flag_c);
 
 #endif
