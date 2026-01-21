@@ -17,8 +17,8 @@
  *     This is part of a modular project structure, allowing each module to be
  *     developed and tested independently.
  *
- * Team: [Your Team Name]
- * Contributor/s: [Your Name]
+ * Team: GA
+ * Contributor/s: Pol García López
  * -----------------------------------------------------------------------------
  */
 
@@ -26,9 +26,12 @@
 #define MODULE2_H
 
 #include "../main.h"
+#include "../module_parser/module_parser.h"
 
-int process_arguments(int argc, char *argv[]);
+ArgFlags* process_arguments(int argc, char *argv[]);
+void show_help(void);
 void print_arguments(int argc, char *argv[]);
+
 
 #endif
 

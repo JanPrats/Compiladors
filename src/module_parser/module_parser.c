@@ -5,7 +5,7 @@
 #include <ctype.h>
 
 #include "./module_parser.h"
-#include "../module_comments_remove/comments_remove.h"
+#include "../module_comments_remove/module_comments_remove.h"
 #include "../module_include/module_include.h"
 #include "../module_define/module_define.h"
 #include "../module_comments_remove/module_comments_remove.h"
@@ -17,7 +17,7 @@
 // This function prepares everything needed before starting the parsing process.
 ParserState* init_parser(const char* input_file,
                          const char* output_file,
-                         PreprocessorFlags* flags) 
+                         ArgFlags* flags) 
 {
     // Allocate memory for the main parser state
     ParserState* state = (ParserState*)malloc(sizeof(ParserState));
@@ -46,7 +46,7 @@ ParserState* init_parser(const char* input_file,
     state->current_line = 1;
 
     // Copy preprocessor behavior flags
-    state->remove_comments     = flags->remove_comments;
+    state->comments_remove     = flags->comments_remove;
     state->process_directives  = flags->process_directives;
 
     // Initial parser state flags

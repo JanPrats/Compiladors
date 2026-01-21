@@ -1,4 +1,5 @@
 #include "./main.h"
+#include "./module_parser/module_parser.h"
 
 FILE* ofile = NULL; // The output handler for the project run (same variable name as in modules)
 
@@ -9,8 +10,17 @@ int main(int argc, char *argv[]) {
     ofile = set_output_test_file(PROJOUTFILENAME);
 
     fprintf(ofile, "Starting module args ...\n");
-    process_arguments(argc, argv);
-    fprintf(ofile, "Finished module args!!\n");
+    
+    ArgFlags* flags = process_arguments(argc, argv);
+    if (!flags) { //Something went wrong since module_args did not return the flags
+        return 1;
+    }
+
+    if (flags->show_help) {
+        show_help();
+        free(flags);
+        return 0; //End after showing manpage, do not preprocess anything
+    }
 
     fprintf(ofile, "Starting module 2 ...\n");
     n = fib(FIBNUM);
