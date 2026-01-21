@@ -22,6 +22,8 @@ int main(int argc, char *argv[]) {
         return 0; //End after showing manpage, do not preprocess anything
     }
 
+    //Now we should start calling the parser here
+
     fprintf(ofile, "Starting module 2 ...\n");
     n = fib(FIBNUM);
     fprintf(ofile, "Fibonacci of %d is: %d\n", FIBNUM, n);
