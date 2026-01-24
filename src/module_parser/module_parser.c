@@ -204,7 +204,7 @@ int parse_until(ParserState* state, const char* stop_symbol, bool copy_to_output
                 }
                 else if (strcmp(directive, "endif") == 0) {
                     if (strcmp(stop_symbol, "endif") != 0) {
-                        report_error(ERROR_CRITICAL, state->current_filename, state->current_line,
+                        report_error(ERROR_ERROR, state->current_filename, state->current_line,
                                    "Unexpected #endif without matching #ifdef");
                     }
                     read_line(state);
