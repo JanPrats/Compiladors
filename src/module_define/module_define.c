@@ -62,13 +62,13 @@ int process_define(ParserState* state) {
     
     // Trim leading whitespace from the macro value
     // After this loop, value points to the first non-whitespace character
-    while (*value && isspace(*value)){
+    while (*value && is_whitespace(*value)){
         value++;
     } 
     // Trim trailing whitespace from the macro value
     // After this loop, all trailing whitespace is removed and value points to a trimmed string
     char* end = value + strlen(value) - 1;
-    while (end > value && isspace(*end)) {
+    while (end > value && is_whitespace(*end)) {
         *end = '\0';
         end--;
     }
