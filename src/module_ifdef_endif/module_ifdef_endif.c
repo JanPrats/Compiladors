@@ -15,7 +15,7 @@ int process_ifdef(ParserState* state, bool is_ifndef, bool copy_to_output) {
     // Read macro name
     char* macro_name = read_word(state);
     if (!macro_name) {
-        report_error(ERROR_CRITICAL, state->current_filename, state->current_line,
+        report_error(ERROR_ERROR, state->current_filename, state->current_line,
                    "#ifdef/#ifndef without macro name");
         return -1;
     }
@@ -55,7 +55,7 @@ int process_ifdef(ParserState* state, bool is_ifndef, bool copy_to_output) {
     }
     else if (result == -1) {
         // Reached EOF without finding #endif - error
-        report_error(ERROR_CRITICAL, state->current_filename, state->current_line,
+        report_error(ERROR_ERROR, state->current_filename, state->current_line,
                    "#ifdef without matching #endif (reached end of file)");
         return -1;
     }
@@ -68,6 +68,4 @@ void module_ifdef_endif_run(void) {
 }
 
 
-static void ifdef_emit_placeholder_warning(void) {
-    report_error(ERROR_WARNING, __FILE__, __LINE__, "module_ifdef_endif placeholder warning");
-}
+

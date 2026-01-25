@@ -12,8 +12,8 @@
 
 /* Error severity levels */
 typedef enum {
-    ERROR_WARNING,
-    ERROR_ERROR
+    ERROR_WARNING, //not ideal but not critical. NOT COUNT AS ERROR IN THE COUNTER
+    ERROR_ERROR //incorrect for the preprocesor. The code is not following the rules. COUNT AS ERROR IN THE COUNTER
 } ErrorLevel;
 
 /* Initializes the error system */

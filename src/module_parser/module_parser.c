@@ -273,7 +273,7 @@ int parse_until(ParserState* state, const char** stop_symbols, bool copy_to_outp
                     }
                     
                     if (!endif_allowed) {
-                        report_error(ERROR_CRITICAL, state->current_filename, state->current_line,
+                        report_error(ERROR_ERROR, state->current_filename, state->current_line,
                                    "Unexpected #endif without matching #ifdef");
                     }
                     read_line(state);
