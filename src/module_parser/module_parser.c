@@ -158,7 +158,8 @@ void skip_whitespace(ParserState* state) {
 
 
 // Main recursive parsing function
-int parse_until(ParserState* state, const char* stop_symbol, bool copy_to_output) {
+// Returns: index of stop_symbol that was found (0-based), or -1 if EOF reached
+int parse_until(ParserState* state, const char** stop_symbols, bool copy_to_output) {
     char c;
     bool at_line_start = true;
     
@@ -196,29 +197,35 @@ int parse_until(ParserState* state, const char* stop_symbol, bool copy_to_output
                     at_line_start = true;
                     continue;
                 }
-                // Check for stop symbols (endif, else)
-                else if (strcmp(directive, stop_symbol) == 0) {
-                    // Consume rest of line
-                    read_line(state);
-                    return 0; // Stop parsing at this level
+                
+                // Check for stop symbols
+                // Iterate through the array of stop symbols
+                for (int i = 0; stop_symbols[i] != NULL; i++) {
+                    if (strcmp(directive, stop_symbols[i]) == 0) {
+                        // Consume rest of line
+                        read_line(state);
+                        return i; // Return the index of the matched stop symbol
+                    }
                 }
-                else if (strcmp(directive, "endif") == 0) {
-                    if (strcmp(stop_symbol, "endif") != 0) {
-                        report_error(ERROR_ERROR, state->current_filename, state->current_line,
+                
+                // Special handling for endif when not in stop_symbols
+                // This provides backward compatibility and error checking
+                if (strcmp(directive, "endif") == 0) {
+                    // Check if "endif" is in stop_symbols
+                    bool endif_allowed = false;
+                    for (int i = 0; stop_symbols[i] != NULL; i++) {
+                        if (strcmp(stop_symbols[i], "endif") == 0) {
+                            endif_allowed = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!endif_allowed) {
+                        report_error(ERROR_CRITICAL, state->current_filename, state->current_line,
                                    "Unexpected #endif without matching #ifdef");
                     }
                     read_line(state);
-                    return 0;
-                }
-                //still need checking once ifdef is fully developed
-                else if (strcmp(directive, "else") == 0) {
-                    if (strcmp(stop_symbol, "else") == 0 || strcmp(stop_symbol, "endif") == 0) {
-                        read_line(state);
-                        return 0;
-                    }
-                    read_line(state);
-                    at_line_start = true;
-                    continue;
+                    // Don't return here since we want to find it in the loop above
                 }
             }
             at_line_start = false;
@@ -273,7 +280,8 @@ int parse_until(ParserState* state, const char* stop_symbol, bool copy_to_output
         at_line_start = (c == '\n'); // Used to detect preprocessor directives (#), need to be at  line start
     }
     
-    return 0;
+    // Reached EOF without finding any stop symbol
+    return -1;
 }
 
 

@@ -1,7 +1,7 @@
 #include "./main.h"
-#include "./module_parser/module_parser.h"
+#include "./module_parser/parser.h"
 
-FILE* ofile = NULL; // The output handler for the project run (same variable name as in modules)
+FILE* ofile = NULL; // The output handler for the project run
 
 int main(int argc, char *argv[]) {
     int n = 0;
@@ -9,7 +9,6 @@ int main(int argc, char *argv[]) {
     errors_init();
 
     ofile = stdout; // Default output to stdout
-    ofile = set_output_test_file(PROJOUTFILENAME);
 
     fprintf(ofile, "Starting module args ...\n");
     
@@ -18,50 +17,48 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    // Show help if requested
     if (flags->show_help) {
         show_help();
         free(flags);
-        return 0; //End after showing manpage, do not preprocess anything
+        return 0;
     }
 
-    fprintf(ofile, "Starting module 2 ...\n");
-    n = fib(FIBNUM);
-    fprintf(ofile, "Fibonacci of %d is: %d\n", FIBNUM, n);
-    fprintf(ofile, "Finished module 2!!\n");
-    
-    fprintf(ofile, "Starting module comments_remove ...\n");
-    module_comments_run();
-    fprintf(ofile, "Finished module comments_remove!!\n");
-    
-    fprintf(ofile, "Starting module define ...\n");
-    module_define_run();
-    fprintf(ofile, "Finished module define!!\n");
-    
-    fprintf(ofile, "Starting module errors ...\n");
-    module_errors_run();
-    fprintf(ofile, "Finished module errors!!\n");
-    
-    fprintf(ofile, "Starting module ifdef_endif ...\n");
-    module_ifdef_endif_run();
-    fprintf(ofile, "Finished module ifdef_endif!!\n");
-    
-    fprintf(ofile, "Starting module include ...\n");
-    module_include_run();
-    fprintf(ofile, "Finished module include!!\n");
-    
-    fprintf(ofile, "Starting module macros ...\n");
-    module_macros_run();
-    fprintf(ofile, "Finished module macros!!\n");
-    
-    printf("All modules executed successfully!\n\n");
-    fprintf(ofile, "All modules executed successfully!\n\n");
+    fprintf(stdout, "Input file: %s\n", flags->input_file);
+    fprintf(stdout, "Output file: %s\n", flags->output_file);
+    fprintf(stdout, "Flags: remove_comments=%d, process_directives=%d\n",
+            flags->remove_comments, flags->process_directives);
 
     errors_finalize();
 
     if (errors_count() > 0) {
         return 1; // Devuelve error al sistema
+    // Initialize parser
+    ParserState* state = init_parser(flags->input_file, flags->output_file, flags);
+    if (!state) {
+        free(flags);
+        return 1;
     }
 
-    fclose(ofile); 
+    fprintf(stdout, "Preprocessing...\n");
+
+    // Parse the input file until EOF
+    // We use an empty array (only NULL) so parse_until will return -1 when it reaches actual EOF
+    const char* no_stop[] = {NULL};  // Empty array means parse until actual EOF
+    int result = parse_until(state, no_stop, true);
+
+    // Cleanup
+    cleanup_parser(state);
+    free(flags);
+
+    if (result == -1) {
+        // -1 means we reached EOF, which is expected and successful
+        fprintf(stdout, "Preprocessing completed successfully!\n");
+        fprintf(stdout, "Output written to: %s\n", flags->output_file);
+    } else {
+        fprintf(stderr, "Preprocessing failed with errors.\n");
+        return 1;
+    }
+
     return 0;
 }
