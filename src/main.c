@@ -1,5 +1,5 @@
 #include "./main.h"
-#include "./module_parser/parser.h"
+#include "./module_parser/module_parser.h"
 
 FILE* ofile = NULL; // The output handler for the project run
 
@@ -24,17 +24,18 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    fprintf(stdout, "Input file: %s\n", flags->input_file);
-    fprintf(stdout, "Output file: %s\n", flags->output_file);
+    fprintf(stdout, "Input file: %s\n", flags->ifile);
+    fprintf(stdout, "Output file: %s\n", flags->ofile);
     fprintf(stdout, "Flags: remove_comments=%d, process_directives=%d\n",
-            flags->remove_comments, flags->process_directives);
+            flags->comments_remove, flags->process_directives);
 
     errors_finalize();
 
     if (errors_count() > 0) {
         return 1; // Devuelve error al sistema
+    }
     // Initialize parser
-    ParserState* state = init_parser(flags->input_file, flags->output_file, flags);
+    ParserState* state = init_parser(flags->ifile, flags->ofile, flags);
     if (!state) {
         free(flags);
         return 1;
@@ -54,7 +55,7 @@ int main(int argc, char *argv[]) {
     if (result == -1) {
         // -1 means we reached EOF, which is expected and successful
         fprintf(stdout, "Preprocessing completed successfully!\n");
-        fprintf(stdout, "Output written to: %s\n", flags->output_file);
+        fprintf(stdout, "Output written to: %s\n", flags->ofile);
     } else {
         fprintf(stderr, "Preprocessing failed with errors.\n");
         return 1;
