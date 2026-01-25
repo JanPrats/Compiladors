@@ -54,7 +54,9 @@ ParserState* init_parser(const char* input_file, const char* output_file, ArgFla
 void cleanup_parser(ParserState* state);
 
 // Main parsing function
-int parse_until(ParserState* state, const char* stop_symbol, bool copy_to_output);
+// Returns: index of stop_symbol that was found (0-based), or -1 if EOF reached
+// stop_symbols: NULL-terminated array of stop symbol strings
+int parse_until(ParserState* state, const char** stop_symbols, bool copy_to_output);
 
 // Helper functions for character/word reading
 char read_char(ParserState* state);
