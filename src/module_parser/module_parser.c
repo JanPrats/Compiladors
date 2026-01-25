@@ -157,6 +157,58 @@ void skip_whitespace(ParserState* state) {
 }
 
 
+// Read a whole word (identifier or keyword), not just 1 char. By Identifier we mean macro names, directive names and variable-like tokens that might be macros
+// We will use this when we are not in a comment or in a string to look ahead the whole word to know if we need to subtitute it, not just each character of the word individually.
+char* read_word(ParserState* state) {
+    
+    static char word[MAX_MACRO_LENGTH]; //static so that it is not only local to the function and can be returned
+    int i = 0; //count the number of characters in the word
+    char c = peek_char(state); //See next character without actually reading it
+
+    if (!isalpha(c) && c != '_') { //It is not a word we want to read completely.
+        return NULL;
+    }
+    
+    while ((c = peek_char(state)) && is_identifier_char(c) && i < MAX_MACRO_LENGTH - 1) { //If we still have buffer to write on and it is an identifier character
+        word[i] = read_char(state); //add the character to the word
+        i++;
+    }
+    word[i] = '\0';
+    
+    if (i > 0) { //If we actually have at least 1 character
+        return word;
+    }
+    return NULL; //else return NULL
+}
+
+// Read until the end of the line
+// In theory used when we want to read a whole line without caring about what there is inside of it. In case we need it.
+// Note this also works when calling it mid-line, so it reads the rest of the line at once
+char* read_line(ParserState* state) {
+    static char line[MAX_LINE_LENGTH]; //static so that it is not only local to the function and can be returned
+    int i = 0;
+    char c;
+    
+    while ((c = read_char(state)) && c != '\n' && c != '\0' && i < MAX_LINE_LENGTH - 1) { //WHile we don't reach end of line or EOF
+        line[i] = c;
+        i++;
+    }
+    line[i] = '\0';
+    
+    return line;
+}
+
+// Raw check if a word is a directive
+bool is_directive(const char* word) {
+    return strcmp(word, "include") == 0 ||
+           strcmp(word, "define") == 0 ||
+           strcmp(word, "ifdef") == 0 ||
+           strcmp(word, "ifndef") == 0 ||
+           strcmp(word, "endif") == 0 ||
+           strcmp(word, "else") == 0;
+}
+
+
 // Main recursive parsing function
 int parse_until(ParserState* state, const char* stop_symbol, bool copy_to_output) {
     char c;

@@ -7,13 +7,14 @@
 
 // Global Variables
 #define MAX_FILENAME 512        // Max File length (in bits I think)
-#define MAX_MACRO_NAME 256      // Max Key Length
+#define MAX_MACRO_LENGTH 256      // Max Key Length
 #define MAX_MACRO_VALUE 1024    // MAX Value Length
 #define MAX_MACROS 1024         // Max number of macros
+#define MAX_LINE_LENGTH 4096    // Max length of a whole line
 
 // Macro dictionary entry (Name of the Macro, its value and if it is defined or not)
 typedef struct MacroEntry {
-    char name[MAX_MACRO_NAME];      
+    char name[MAX_MACRO_LENGTH];        
     char value[MAX_MACRO_VALUE];
     bool is_defined;
 } MacroEntry;
@@ -62,6 +63,11 @@ void unread_char(ParserState* state, char c);
 void skip_whitespace(ParserState* state);
 bool is_whitespace(char c);
 bool is_identifier_char(char c);
+char* read_word(ParserState* state);
+char* read_line(ParserState* state);
+
+// To identify directves
+bool is_directive(const char* word);
 
 
 #endif // MODULE_PARSER_H
