@@ -4,7 +4,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "./module_parser.h"
+#include "module_parser.h"
 #include "../module_comments_remove/module_comments_remove.h"
 #include "../module_include/module_include.h"
 #include "../module_define/module_define.h"
@@ -46,7 +46,7 @@ ParserState* init_parser(const char* input_file,
     state->current_line = 1;
 
     // Copy preprocessor behavior flags
-    state->comments_remove     = flags->comments_remove;
+    state->remove_comments     = flags->remove_comments;
     state->process_directives  = flags->process_directives;
 
     // Initial parser state flags
@@ -161,7 +161,7 @@ void skip_whitespace(ParserState* state) {
 // We will use this when we are not in a comment or in a string to look ahead the whole word to know if we need to subtitute it, not just each character of the word individually.
 char* read_word(ParserState* state) {
     
-    static char word[MAX_MACRO_LENGTH]; //static so that it is not only local to the function and can be returned
+    static char word[MAX_MACRO_NAME]; //static so that it is not only local to the function and can be returned
     int i = 0; //count the number of characters in the word
     char c = peek_char(state); //See next character without actually reading it
 
@@ -169,7 +169,7 @@ char* read_word(ParserState* state) {
         return NULL;
     }
     
-    while ((c = peek_char(state)) && is_identifier_char(c) && i < MAX_MACRO_LENGTH - 1) { //If we still have buffer to write on and it is an identifier character
+    while ((c = peek_char(state)) && is_identifier_char(c) && i < MAX_MACRO_NAME - 1) { //If we still have buffer to write on and it is an identifier character
         word[i] = read_char(state); //add the character to the word
         i++;
     }

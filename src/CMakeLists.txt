@@ -33,6 +33,7 @@ add_subdirectory(module_errors)
 add_subdirectory(module_ifdef_endif)
 add_subdirectory(module_include)
 add_subdirectory(module_macros)
+add_subdirectory(module_parser)
 
 
 message(STATUS "   - (${PROJECT_NAME}) Added modules subdirectories")

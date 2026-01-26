@@ -31,6 +31,7 @@
 #include "../main.h"
 #include "../module_parser/module_parser.h"
 
+typedef struct ArgFlags ArgFlags;   
 ArgFlags* process_arguments(int argc, char *argv[]);
 void show_help(void);
 void print_arguments(int argc, char *argv[]);

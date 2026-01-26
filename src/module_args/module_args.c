@@ -22,6 +22,8 @@
 #include "./module_args.h"
 #include "../module_parser/module_parser.h"
 #include "../module_errors/module_errors.h"
+#include <string.h>
+#include <libgen.h>
 
 void print_arguments(int argc, char *argv[]) {
     fprintf(ofile, "Arguments received (%d):\n", argc);
@@ -69,7 +71,7 @@ ArgFlags* process_arguments(int argc, char *argv[]) {
         else {
             char msg[256];
             snprintf(msg, sizeof(msg), "Unknown flag '%s' (ignored). Use -help for info.", argv[i]);
-            report_error(ERROR_WARNING, __FILE__, __LINE__, msg);
+            //report_error(ERROR_WARNING, __FILE__, __LINE__, msg);
         }
     }
 

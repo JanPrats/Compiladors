@@ -11,6 +11,7 @@
 #include "./module_ifdef_endif/module_ifdef_endif.h"
 #include "./module_include/module_include.h"
 #include "./module_macros/module_macros.h"
+#include "./module_parser/module_parser.h"
 
 // Output file of project run: either a stdout or a filename with log extension (comment one out)
 #define PROJOUTFILENAME "./proj_modules_template.log"
