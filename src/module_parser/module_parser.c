@@ -198,17 +198,6 @@ char* read_line(ParserState* state) {
     return line;
 }
 
-// Raw check if a word is a directive
-bool is_directive(const char* word) {
-    return strcmp(word, "include") == 0 ||
-           strcmp(word, "define") == 0 ||
-           strcmp(word, "ifdef") == 0 ||
-           strcmp(word, "ifndef") == 0 ||
-           strcmp(word, "endif") == 0 ||
-           strcmp(word, "else") == 0;
-}
-
-
 // Main recursive parsing function
 // Returns: index of stop_symbol that was found (0-based), or -1 if EOF reached
 int parse_until(ParserState* state, const char** stop_symbols, bool copy_to_output) {

@@ -68,9 +68,6 @@ bool is_identifier_char(char c);
 char* read_word(ParserState* state);
 char* read_line(ParserState* state);
 
-// To identify directves
-bool is_directive(const char* word);
-
 
 #endif // MODULE_PARSER_H
 
