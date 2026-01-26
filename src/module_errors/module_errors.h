@@ -1,13 +1,20 @@
+/*
+ * -----------------------------------------------------------------------------
+ * module_errors.h
+ *
+ * Interface for the error handling module.
+ *
+ * This header defines the ErrorLevel types and prototypes for initializing,
+ * reporting, and summarizing errors during the preprocessing phase.
+ *
+ * Author: Andrea Salló Ribas
+ * -----------------------------------------------------------------------------
+ */
+
 #ifndef MODULE_ERRORS_H
 #define MODULE_ERRORS_H
 
 #include "../main.h"
-
-/*
- * The errors module detects and reports preprocessing
- * errors and warnings encountered during preprocessing.
- */
-
 #include <stdio.h>
 
 /* Error severity levels */
