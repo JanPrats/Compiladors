@@ -1,4 +1,31 @@
-// Gorka Hernández Villalón
+/*
+ * -----------------------------------------------------------------------------
+ * module_include.c
+ *
+ * This module provides functionality to handle #include directives in the parser.
+ *
+ * - `read_filename`: Reads and extracts the filename from an #include directive
+ *                    until the closing delimiter is found.
+ * - `open_include`: Opens the included file and copies its content to the output,
+ *                   attempting both absolute and relative paths if needed.
+ * - `process_include`: Main entry point that processes a #include directive,
+ *                      validates syntax, and delegates file content insertion.
+ *
+ * Usage:
+ *     Called from the parser when processing lines containing #include directives.
+ *     Supports both quoted includes ("file.h") and angle bracket includes (<file.h>).
+ *     The module searches for files in both the specified path and relative to the
+ *     current file's directory.
+ *
+ * Status:
+ *     Implemented version with support for local and system includes, recursive
+ *     include depth tracking (max 64 levels), and error reporting for missing
+ *     files or malformed directives.
+ *
+ * Team: GA
+ * Author: Gorka Hernández Villalón
+ * -----------------------------------------------------------------------------
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
