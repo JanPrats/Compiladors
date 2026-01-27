@@ -3,27 +3,16 @@
  * module_include.c
  *
  * This module provides functionality to handle #include directives in the parser.
+ * It has been refactored to support recursive preprocessing, allowing included
+ * files to contain their own preprocessor directives.
  *
- * - `read_filename`: Reads and extracts the filename from an #include directive
- *                    until the closing delimiter is found.
- * - `open_include`: Opens the included file and copies its content to the output,
- *                   attempting both absolute and relative paths if needed.
- * - `process_include`: Main entry point that processes a #include directive,
- *                      validates syntax, and delegates file content insertion.
+ * Key changes:
+ * - `process_include` now saves the current parser state, switches to the 
+ *   included file, and calls `parse_until` recursively.
+ * - Supports relative path searching for included files.
+ * - Prevents infinite recursion with a depth limit.
  *
- * Usage:
- *     Called from the parser when processing lines containing #include directives.
- *     Supports both quoted includes ("file.h") and angle bracket includes (<file.h>).
- *     The module searches for files in both the specified path and relative to the
- *     current file's directory.
- *
- * Status:
- *     Implemented version with support for local and system includes, recursive
- *     include depth tracking (max 64 levels), and error reporting for missing
- *     files or malformed directives.
- *
- * Team: GA
- * Author: Gorka Hernández Villalón
+ * Authors: Gorka Hernández Villalón, Antigravity
  * -----------------------------------------------------------------------------
  */
 
@@ -33,7 +22,7 @@
 #include <ctype.h>
 #include <stdbool.h>
 
-#include "./module_include.h"
+#include "module_include.h"
 #include "../module_parser/module_parser.h"
 #include "../module_errors/module_errors.h"
 
@@ -43,70 +32,13 @@
 static int include_depth = 0;
 
 void module_include_run(void) {
-    printf("Loaded module_include: include directive processing module\n");
-}
-
-static int read_filename(ParserState* state, char* filename, size_t max_len, char delimiter) {
-    size_t i = 0;
-    char c;
-    
-    while ((c = read_char(state)) != '\0' && c != '\n') {
-        if (c == delimiter) {
-            filename[i] = '\0';
-            return 1;
-        }
-        
-        if (i < max_len - 1) {
-            filename[i++] = c;
-        } else {
-            report_error(ERROR_ERROR, state->current_filename, state->current_line,
-                        "Include filename too long");
-            return 0;
-        }
-    }    
-    report_error(ERROR_ERROR, state->current_filename, state->current_line,
-                "Malformed #include directive");
-    return 0;
-}
-
-static int open_include(ParserState* state, const char* filename, bool copy_to_output) {
-    FILE* include_file = fopen(filename, "r");
-    if (!include_file) {
-        char alt_path[MAX_INCLUDE_PATH];
-        const char* last_slash = strrchr(state->current_filename, '/');
-        if (last_slash) {
-            size_t dir_len = last_slash - state->current_filename + 1;
-            if (dir_len + strlen(filename) < MAX_INCLUDE_PATH) {
-                strncpy(alt_path, state->current_filename, dir_len);
-                alt_path[dir_len] = '\0';
-                strcat(alt_path, filename);
-                include_file = fopen(alt_path, "r");
-            }
-        }
-        if (!include_file) {
-            report_error(ERROR_ERROR, state->current_filename, state->current_line,
-                        "Cannot open included file");
-            return 0;
-        }
-    }
-    if (copy_to_output && state->output_file) {
-        fprintf(state->output_file, "\n");
-    }
-    char c;
-    while ((c = fgetc(include_file)) != EOF) {
-        if (copy_to_output && state->output_file) {
-            fputc(c, state->output_file);
-        }
-    }
-    if (copy_to_output && state->output_file) {
-        fprintf(state->output_file, "\n");
-    }
-    fclose(include_file);
-    return 1;
+    printf("Loaded module_include: recursive include directive processing module\n");
 }
 
 int process_include(ParserState* state, bool copy_to_output) {
+    // Skip whitespace after #include
     skip_whitespace(state);
+    
     char c = read_char(state);
     char delimiter;
     if (c == '"') {
@@ -115,25 +47,113 @@ int process_include(ParserState* state, bool copy_to_output) {
         delimiter = '>';
     } else {
         report_error(ERROR_ERROR, state->current_filename, state->current_line,
-                    "Invalid #include syntax");
+                    "Invalid #include syntax: expected \" or <");
+        // Consume till newline
+        while ((c = read_char(state)) && c != '\n');
         return -1;
     }
+    
     char filename[MAX_INCLUDE_PATH];
-    if (!read_filename(state, filename, MAX_INCLUDE_PATH, delimiter)) {
+    int i = 0;
+    while ((c = read_char(state)) && c != delimiter && c != '\n' && i < MAX_INCLUDE_PATH - 1) {
+        filename[i++] = c;
+    }
+    filename[i] = '\0';
+    
+    if (c != delimiter) {
+        report_error(ERROR_ERROR, state->current_filename, state->current_line,
+                    "Malformed #include directive: missing closing delimiter");
         return -1;
     }
-    char rest;
-    while ((rest = read_char(state)) != '\0' && rest != '\n') {
+    
+    // Consume rest of line to avoid issues in the outer parser
+    while ((c = peek_char(state)) && c != '\n') {
+        read_char(state);
     }
+    // Read the newline too if it exists
+    if (peek_char(state) == '\n') {
+        read_char(state);
+    }
+
     if (include_depth >= MAX_INCLUDE_DEPTH) {
         report_error(ERROR_ERROR, state->current_filename, state->current_line,
                     "Maximum include depth exceeded");
         return -1;
     }
-    include_depth++;
-    if (copy_to_output) {
-        open_include(state, filename, copy_to_output);
+
+    // Try to open include file
+    FILE* include_fp = fopen(filename, "r");
+    char actual_path[MAX_INCLUDE_PATH];
+    strncpy(actual_path, filename, MAX_INCLUDE_PATH - 1);
+    actual_path[MAX_INCLUDE_PATH - 1] = '\0';
+
+    if (!include_fp) {
+        // Try relative to current file's directory
+        const char* last_slash = strrchr(state->current_filename, '/');
+        if (last_slash) {
+            size_t dir_len = last_slash - state->current_filename + 1;
+            if (dir_len + strlen(filename) < MAX_INCLUDE_PATH) {
+                char temp_path[MAX_INCLUDE_PATH];
+                strncpy(temp_path, state->current_filename, dir_len);
+                temp_path[dir_len] = '\0';
+                strcat(temp_path, filename);
+                include_fp = fopen(temp_path, "r");
+                if (include_fp) {
+                    strcpy(actual_path, temp_path);
+                }
+            }
+        }
     }
+
+    if (!include_fp) {
+        char error_msg[MAX_LINE_LENGTH];
+        snprintf(error_msg, sizeof(error_msg), "Cannot open include file '%s'", filename);
+        report_error(ERROR_ERROR, state->current_filename, state->current_line, error_msg);
+        return -1;
+    }
+
+    // Recursion preparation: Save state
+    FILE* old_file = state->current_file;
+    char old_filename[MAX_FILENAME];
+    strncpy(old_filename, state->current_filename, MAX_FILENAME - 1);
+    old_filename[MAX_FILENAME - 1] = '\0';
+    int old_line = state->current_line;
+    bool old_has_lookahead = state->has_lookahead;
+    char old_lookahead = state->lookahead;
+
+    // Set new state for recursion
+    state->current_file = include_fp;
+    strncpy(state->current_filename, actual_path, MAX_FILENAME - 1);
+    state->current_filename[MAX_FILENAME - 1] = '\0';
+    state->current_line = 1;
+    state->has_lookahead = false;
+
+    include_depth++;
+    
+    // Add a newline before included content to separate from #include line
+    if (copy_to_output && state->output_file) {
+        fputc('\n', state->output_file);
+    }
+
+    // RECURSIVE CALL
+    // stop_symbols = NULL means run until EOF of the CURRENT state->current_file
+    parse_until(state, NULL, copy_to_output);
+
+    // Add a newline after included content
+    if (copy_to_output && state->output_file) {
+        fputc('\n', state->output_file);
+    }
+
     include_depth--;
+
+    // Cleanup and Restore
+    fclose(include_fp);
+    state->current_file = old_file;
+    strncpy(state->current_filename, old_filename, MAX_FILENAME - 1);
+    state->current_filename[MAX_FILENAME - 1] = '\0';
+    state->current_line = old_line;
+    state->has_lookahead = old_has_lookahead;
+    state->lookahead = old_lookahead;
+
     return 0;
 }
