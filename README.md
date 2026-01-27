@@ -28,39 +28,65 @@ directory. The log files are named with the time to avoid overwritting the diffe
 
 ## 3. Project Structure
 ```
-/ (root)
-├── CMakeLists.txt     # Top-level CMake configuration (compiles several independent programs)
-├── cmake-kits.json    # CMake kits for VS Code to select toolchains
-└── .github/      # Github configurations
-│ ├── workflows         # Github workflows for testing when push and PR
-├── .vscode/      # Configurations to run VS code
-│ └── cmake-kits.json  # To ensure gcc path for cmake (update your path)
-│ └── extensions.json  # Recommended extensions (install when recommendations pop up in your VS code installation)
-│ ├── launch.json      # Debug configurations of command line arguments (create your run configurations)
-│ ├── settings.json    # VS Code workspace settings for CMake and build (update your paths and modules)
-│ └── tasks.json       # Build and run tasks for VS Code: Add/modify tasks as you need
-├── src/          # The project source code
-│ ├── main.c           # Main program 
-│ ├── main.h           # Program data structure and common project definitions
-│ ├── module_args/     # Module arguments
-│ │ ├── module_args.c  # Module arguments source
-│ │ ├── module_args.h  # Module arguments header
-│ │ └── CMakeLists.txt # Module arguments build instructions (separate to avoid conflicts)
-│ └── module_2/        # Module 2 example template (create more modules as you need)
-│ │ ├── module_2.c     # Module 2 source
-│ │ ├── module_2.h     # Module 2 header
-│ └── CMakeLists.txt   # Module 2 build instructions (separate to avoid conflicts)
-│ ├── utils.c/         # Utility library (module example without independent CMakeList)
-│ ├── utils.h/         # 
-├── tests/        # Independent programs (mains) for testing modules individually
-│ ├── test_module_args.c # Independent program to test the module_args
-│ ├── test_module_args.h # Definitions needed just for testing module_args
-│ ├── test_module_2.c    # Independent program to test the module_2
-│ ├── test_module_2.h    # Definitions needed just for testing module_2
-│ ├── test_module.h      # Common testing definitions to all testing modules
-│ └── CMakeLists.txt     # Test executables build instructions (generates the different executables)
-└── build/      # Directory for CMake build output (ignored in git commits, different for each computer)
-└── logs/       # Directory with the output logs to track execution (can ignore in git commits)
+├── .git/                   # Git metadata (commits, branches, history)
+├── .gitignore              # Files/directories excluded from source control
+├── CMakeLists.txt          # Root build configuration generating all targets
+├── Diagrames de Flux/      # Flowcharts and architectural diagrams
+├── README.md               # Project documentation and onboarding guide
+├── gitlogs/                # Archived Git logs for auditing
+├── logs/                   # Execution logs (optional to track runs)
+├── build/                  # Local CMake build output (ignored by Git)
+├── src/                    # Application source code
+│   ├── CMakeLists.txt          # Aggregates module executables/libraries
+│   ├── input-example.c         # Sample input program for testing
+│   ├── input-example.h         # Header associated with the example input
+│   ├── main.c                  # Main entry point (orchestrates preprocessing)
+│   ├── main.h                  # Shared definitions and includes for main
+│   ├── utils_files.c           # File utility helpers (paths, logging, etc.)
+│   ├── utils_files.h           # Header for file utility helpers
+│   ├── module_args/            # Command-line argument processing module
+│   │   ├── CMakeLists.txt          # Build rules for module_args
+│   │   ├── module_args.c           # Implementation of argument parsing
+│   │   └── module_args.h           # Interface for argument parsing
+│   ├── module_comments_remove/ # Comment stripping module
+│   │   ├── CMakeLists.txt          # Build rules for comment removal
+│   │   ├── module_comments_remove.c# Logic to detect/remove comments
+│   │   └── module_comments_remove.h# Interface for comment removal
+│   ├── module_define/          # #define processing and macro storage
+│   │   ├── CMakeLists.txt          # Build rules for module_define
+│   │   ├── module_define.c         # Implementation of macro definitions
+│   │   └── module_define.h         # Interface for defining/substituting macros
+│   ├── module_errors/          # Error reporting infrastructure
+│   │   ├── CMakeLists.txt          # Build rules for module_errors
+│   │   ├── module_errors.c         # Error logging/aggregation logic
+│   │   └── module_errors.h         # Interface for reporting errors/warnings
+│   ├── module_ifdef_endif/     # #ifdef / #ifndef conditional logic
+│   │   ├── CMakeLists.txt          # Build rules for conditional module
+│   │   ├── module_ifdef_endif.c    # Implementation of conditional parsing
+│   │   └── module_ifdef_endif.h    # Interface for conditional handling
+│   ├── module_include/         # #include directive processing
+│   │   ├── CMakeLists.txt          # Build rules for include module
+│   │   ├── module_include.c        # Implementation of recursive includes
+│   │   └── module_include.h        # Interface for include handling
+│   ├── module_macros/          # Macro expansion utilities
+│   │   ├── CMakeLists.txt          # Build rules for macro module
+│   │   ├── module_macros.c         # Implementation of macro substitution
+│   │   └── module_macros.h         # Interface for macro substitution
+│   ├── module_parser/          # Core parsing engine
+│   │   ├── CMakeLists.txt          # Build rules for parser module
+│   │   ├── module_parser.c         # Implementation of parse_until and helpers
+│   │   └── module_parser.h         # Parser state definition and prototypes
+│   └── module_2/               # Skeleton/example module
+│       ├── CMakeLists.txt          # Build rules for module_2
+│       ├── module_2.c              # Example functionality placeholder
+│       └── module_2.h              # Header for module_2
+└── tests/                   # Standalone executables for module tests
+    ├── CMakeLists.txt          # Builds each test target
+    ├── test_module.h           # Shared testing helpers/macros
+    ├── test_module_2.c         # Test harness for module_2
+    ├── test_module_2.h         # Test-specific declarations for module_2
+    ├── test_module_args.c      # Test harness for module_args
+    └── test_module_args.h      # Test-specific declarations for module_args
 ```
 
 ---
@@ -127,7 +153,3 @@ This allows to select the proper compiler and generator in VS Code easily.
 - The `logs/` directory can be ignored by git depending if you want to share your output files to the team.
 - Environment assumes MSYS2 installed with UCRT64 toolchain available and added to PATH.
 - The configuration aims for minimal manual setup to reduce friction between team contributors.
-
-
-
-
