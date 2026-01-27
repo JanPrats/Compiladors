@@ -1,551 +1,275 @@
-# Input/Output Diagram - C Preprocessor
+# Diagrama Input/Output dels Mòduls del Preprocessador
 
-## Overview
-Aquest diagrama mostra el flux complet d'entrada/sortida del preprocessor, des dels arguments de línia de comandes fins a la generació del fitxer de sortida processat.
-
----
-
-## Main Input/Output Flow
+## Flux General 
 
 ```
-┌──────────────────────────────────────────────────────────────────────┐
-│                         PREPROCESSOR SYSTEM                          │
-└──────────────────────────────────────────────────────────────────────┘
++---------------------+
+|  User / Command Line |
++----------+----------+
+           |
+           v (argc, argv)
++---------------------------------------------------------------+
+|                        MAIN PROGRAM                           |
+|                        (src/main.c)                           |
+|  1. Init Errors                                               |
+|  2. Process Args  <----->  [ Module Args ]                    |
+|  3. Init Parser                                               |
+|  4. Run Loop      ------>  [ Module Parser ]                  |
++---------------------------------------------------------------+
+                                  |
+                                  v (ParserState)
++---------------------------------------------------------------+
+|                      MODULE PARSER                            |
+|                  (src/module_parser.c)                        |
+|                                                               |
+|   +-------------------+      +----------------------------+   |
+|   |   Input Stream    |----->|   Token Detection Logic    |   |
+|   +-------------------+      +-------------+--------------+   |
+|                                            |                  |
+|          +---------punter enviat apuntant dsp de:--+          |
+|          |                 |               |       |          |
+|   (// or /*)        (#define)        (#include)   (#ifdef)    |
+| +----------------+ +-------------+ +----------+ +-----------+ |
+| | Module Comments| |Module Define| |Mod Include| |Mod Ifdef | |
+| +----------------+ +-------------+ +----------+ +-----------+ |
+|          |                 |              |           |       |
+|          +-----------------+--------------+-----------+       |
+|                            |                                  |
+|                            v                                  |
+|                  +-------------------+                        |
+|                  |  copy output file |                        |
+|                  |  if need it       |                        |
+|                  +-------------------+                        |
++---------------------------------------------------------------+
+           |
+           v
+    +-------------+
+    | Output File |
+    +-------------+
+```
+# Flux Arguments 
 
-INPUT                           PROCESSING                      OUTPUT
-═════                           ══════════                      ══════
-
-┌─────────────────┐
-│ Command Line    │
-│   Arguments     │
-│                 │
-│  ./preproc      │
-│    -c           │──┐
-│    -d           │  │
-│    input.c      │  │
-│    output.c     │  │
-└─────────────────┘  │
-                     │
-┌─────────────────┐  │![alt text](image.png)
-│  Input File     │  │         ┌──────────────────┐
-│   (source.c)    │──┤────────>│  module_args     │
-│                 │  │         │                  │
-│ - C code        │  │         │ Parse arguments  │
-│ - #include      │  │         │ Create ArgFlags  │
-│ - #define       │  │         └────────┬─────────┘
-│ - #ifdef/endif  │  │                  │
-│ - Macros        │  │                  ▼
-│ - Comments      │  │         ┌──────────────────┐
-└─────────────────┘  │         │  init_parser()   │
-                     │         │                  │
-┌─────────────────┐  │         │ Create           │
-│ Included Files  │  │         │ ParserState +    │
-│  (#include)     │──┘         │ MacroDict        │
-│                 │            └────────┬─────────┘
-│ - header.h      │                     │
-│ - library.h     │                     ▼
-└─────────────────┘            ┌──────────────────┐
-                               │  parse_until()   │
-                               │                  │
-                               │  Main Parser     │
-                               │  Loop            │
-                               └────────┬─────────┘
-                                        │
-                     ┌──────────────────┼──────────────────┐
-                     │                  │                  │
-                     ▼                  ▼                  ▼
-          ┌──────────────────┐ ┌──────────────┐  ┌──────────────┐
-          │ Comments Remove  │ │   Includes   │  │   Defines    │
-          │                  │ │              │  │              │
-          │ Remove // and    │ │ Process      │  │ Process      │
-          │ /* */ comments   │ │ #include     │  │ #define      │
-          │ (if -c flag)     │ │ directives   │  │ directives   │
-          └──────────────────┘ └──────────────┘  └──────────────┘
-                     │                  │                  │
-                     └──────────────────┼──────────────────┘
-                                        │
-                     ┌──────────────────┼──────────────────┐
-                     │                  │                  │
-                     ▼                  ▼                  ▼
-          ┌──────────────────┐ ┌──────────────┐  ┌──────────────┐
-          │  #ifdef/#endif   │ │    Macros    │  │    Errors    │
-          │                  │ │              │  │              │
-          │ Conditional      │ │ Expand       │  │ Collect and  │
-          │ compilation      │ │ macro calls  │  │ report       │
-          │ (if -d flag)     │ │              │  │ errors       │
-          └──────────────────┘ └──────────────┘  └──────────────┘
-                                        │
-                                        ▼
-                               ┌──────────────────┐
-                               │  Output File     │
-                               │                  │
-                               │ Write processed  │
-                               │ code             │
-                               └────────┬─────────┘
-                                        │
-                                        ▼
-                             ┌─────────────────────┐
-                             │   Output File       │
-                             │   (processed.c)     │
-                             │                     │
-                             │ - Expanded macros   │
-                             │ - Included headers  │
-                             │ - No comments (if)  │
-                             │ - Conditional code  │
-                             └─────────────────────┘
-                                        │
-                                        ▼
-                             ┌─────────────────────┐
-                             │ Console (stdout)    │
-                             │                     │
-                             │ - Status messages   │
-                             │ - Error reports     │
-                             │ - Debug info        │
-                             └─────────────────────┘
+```
+INPUT: .exe -flag file.c
+         ↓
+    [MODULE ARGS]
+         ↓
+OUTPUT: ArgFlags + Input/Output filenames
 ```
 
 ---
 
-## Detailed Input Specifications
+## Detall per Mòdul
 
-### 1. Command Line Arguments
+### 1. **MODULE ARGS** (module_arguments)
+**Entrada:**
+- `argc, argv` (arguments de la línia de comandaments)
+- Exemple: `.exe -flag file.c `
 
-```
-./preprocessor [FLAGS] <input_file> [output_file]
+**Sortida:**
+- `ArgFlags struct` amb:
+  - `ifile`: nom del fitxer d'entrada
+  - `ofile`: nom del fitxer de sortida
+  - `remove_comments`: flag -c (bool)
+  - `process_directives`: flag -d (bool)
+  - `show_help`: flag -help (bool)
 
-FLAGS:
-  -c              Remove comments from source code
-  -d              Process preprocessor directives
-  -help           Show help message
-
-EXAMPLES:
-  ./preprocessor -c -d input.c output.c
-  ./preprocessor -c input.c
-  ./preprocessor -help
-```
-
-**Input Processing:**
-```
-module_args:
-  ├─> Parse command line
-  ├─> Validate flags
-  ├─> Extract input filename
-  ├─> Extract output filename (default: based on input)
-  └─> Create ArgFlags structure
-```
-
-### 2. Input Files
-
-#### Main Input File
-```c
-// Example: input.c
-#include <stdio.h>
-#include "myheader.h"
-
-#define MAX 100
-#define MIN(a,b) ((a)<(b)?(a):(b))
-
-#ifdef DEBUG
-    printf("Debug mode\n");
-#endif
-
-int main() {
-    int x = MAX;  // Will be expanded to: int x = 100;
-    // This is a comment - will be removed if -c flag
-    return 0;
-}
-```
-
-#### Included Files (#include)
-```c
-// Example: myheader.h
-#ifndef MYHEADER_H
-#define MYHEADER_H
-
-#define VERSION 1.0
-
-void my_function(void);
-
-#endif
-```
+**No retorna res al fitxer**, escriu missatges de debug al `stdout`
 
 ---
 
-## Processing Stages
+### 2. **PARSER** (module_parser)
+**Entrada:**
+- `ifile` (fitxer d'entrada)
+- `ofile` (fitxer de sortida)
+- `ArgFlags` (flags de configuració)
 
-### Stage 1: Initialization
+**Sortida:**
+- Cap de directa. Escriu el fitxer processat a `ofile`
+- `ParserState` (estat intern del parser)
 
-```
-┌──────────────────────────────────────────────┐
-│           init_parser()                      │
-│                                              │
-│  INPUT:  ArgFlags* flags                     │
-│          const char* input_file              │
-│          const char* output_file             │
-│                                              │
-│  ACTIONS:                                    │
-│    1. Open input file (read mode)           │
-│    2. Open output file (write mode)         │
-│    3. Create MacroDict                      │
-│    4. Initialize ParserState                │
-│    5. Set flags from arguments              │
-│                                              │
-│  OUTPUT: ParserState* (initialized)          │
-└──────────────────────────────────────────────┘
-```
-
-### Stage 2: Character-by-Character Processing
-
-```
-┌────────────────────────────────────────────────────────────┐
-│                    parse_until()                           │
-│                                                            │
-│  Character Reading:                                        │
-│    read_char()  ──> Consume character from input          │
-│    peek_char()  ──> Look ahead without consuming          │
-│    unread_char() ──> Push back one character              │
-│                                                            │
-│  Word/Token Reading:                                       │
-│    read_word()  ──> Read complete identifier/keyword      │
-│    read_line()  ──> Read until end of line                │
-│                                                            │
-│  State Tracking:                                           │
-│    in_string    ──> Are we inside "..." ?                 │
-│    in_comment   ──> Are we inside /* ... */ ?             │
-│    lookahead    ──> Buffered next character               │
-└────────────────────────────────────────────────────────────┘
-```
-
-### Stage 3: Directive Processing (if -d flag)
-
-```
-┌──────────────────────────────────────────────┐
-│  Directive Detection & Processing            │
-│                                              │
-│  #include "file.h"                           │
-│     └──> process_include()                   │
-│          ├─> Find file                       │
-│          ├─> Open file                       │
-│          ├─> Parse recursively               │
-│          └─> Insert content                  │
-│                                              │
-│  #define NAME value                          │
-│     └──> process_define()                    │
-│          ├─> Extract macro name              │
-│          ├─> Extract macro value             │
-│          └─> Add to MacroDict                │
-│                                              │
-│  #ifdef SYMBOL                               │
-│  #endif                                      │
-│     └──> Conditional processing              │
-│          ├─> Check if macro defined          │
-│          ├─> Include/exclude block           │
-│          └─> Nested ifdef support            │
-└──────────────────────────────────────────────┘
-```
-
-### Stage 4: Comment Removal (if -c flag)
-
-```
-┌──────────────────────────────────────────────┐
-│         Comment Detection & Removal          │
-│                                              │
-│  Single-line comments:                       │
-│    // comment text                           │
-│    └──> Remove until \n                      │
-│                                              │
-│  Multi-line comments:                        │
-│    /* comment                                │
-│       more text                              │
-│       more text */                           │
-│    └──> Remove entire block                  │
-│                                              │
-│  Preserve strings:                           │
-│    "This // is not a comment"                │
-│    └──> Keep intact (in_string flag)         │
-└──────────────────────────────────────────────┘
-```
-
-### Stage 5: Macro Expansion
-
-```
-┌──────────────────────────────────────────────┐
-│           Macro Substitution                 │
-│                                              │
-│  Simple macros:                              │
-│    MAX ──> 100                               │
-│                                              │
-│  Function-like macros:                       │
-│    MIN(x,y) ──> ((x)<(y)?(x):(y))            │
-│                                              │
-│  Process:                                    │
-│    1. read_word() ──> identifier             │
-│    2. substitute_macro() ──> lookup          │
-│    3. Replace with value from MacroDict      │
-│    4. Write to output                        │
-└──────────────────────────────────────────────┘
-```
+**Responsabilitats:**
+- Llegeix el fitxer caràcter per caràcter
+- Detecta directives preprocessador
+- Delega a mòduls especificats según la directiva trobada
 
 ---
 
-## Output Specifications
+### 3. **MODULE COMMENTS_REMOVE** (procés dins del parser)
+**Entrada:**
+- Caràcters llegits pel parser
+- `current_char` i `next_char` (per detectar `//` o `/*`)
 
-### 1. Primary Output File
-
-```c
-// Example: output.c (after processing)
-
-// Included content from <stdio.h>
-// Included content from "myheader.h"
-
-// Comments removed (if -c)
-// Macros expanded:
-int main() {
-    int x = 100;  // MAX expanded
-    return 0;
-}
-```
-
-**Output Characteristics:**
-- ✅ All #include directives resolved and content inserted
-- ✅ All #define macros expanded
-- ✅ Comments removed (if -c flag)
-- ✅ Conditional blocks processed (if -d flag)
-- ✅ Valid C source code ready for compilation
-
-### 2. Console Output (stdout/stderr)
-
-```
-Starting module args ...
-Input file: input.c
-Output file: output.c
-Flags: remove_comments=1, process_directives=1
-Preprocessing...
-Preprocessing completed!
-Output written to: output.c
-```
-
-**Error Messages (stderr):**
-```
-Error: Could not open file 'missing.h'
-Error: Macro already defined 'MAX'
-Error: Unmatched #endif directive
-```
+**Sortida:**
+- No retorna res
+- Escriu al fitxer de sortida:
+  - Si `-c` flag: escriu els comentaris (preservats)
+  - Si `-c` no està actiu: els comments es descarten
 
 ---
 
-## Data Flow Summary
+### 4. **MODULE INCLUDE** (procés dins del parser)
+**Entrada:**
+- Detecta directiva `#include "file"` o `#include <file>`
+- Llegeix fins trobar `"` o `>`
+- Recursiu: pot processar directives dins del fitxer incluït
 
-### Character Level Flow
-```
-Input File ──┐
-             │
-             ├──> fgetc() ──> read_char() ──┐
-             │                               │
-Lookahead <──┘                               │
-Buffer                                       ▼
-                                    ┌──────────────────┐
-                                    │  State Machine   │
-                                    │                  │
-                                    │  • in_string     │
-                                    │  • in_comment    │
-                                    │  • processing    │
-                                    └────────┬─────────┘
-                                             │
-                                             ▼
-                                    ┌──────────────────┐
-                                    │  Decision Tree   │
-                                    │                  │
-                                    │  Comment?        │
-                                    │  Directive?      │
-                                    │  Macro?          │
-                                    │  Regular code?   │
-                                    └────────┬─────────┘
-                                             │
-                                             ▼
-Output File <──────────────────────── fputc()/fprintf()
-```
+**Sortida:**
+- No retorna res
+- Escriu al fitxer de sortida:
+  - El contingut del fitxer incluït (processat recursivament)
+  - Sense la línea `#include` original
 
-### Module Interaction Flow
-```
-Input ──> module_args ──> ArgFlags
-                            │
-                            ▼
-                     init_parser() ──> ParserState + MacroDict
-                            │
-                            ▼
-                     parse_until() <──┐
-                            │          │
-        ┌───────────────────┼──────────┴──────────────┐
-        │                   │                         │
-        ▼                   ▼                         ▼
-  Comments Module    Directive Modules         Macro Module
-        │                   │                         │
-        │            ┌──────┴──────┐                  │
-        │            ▼             ▼                  │
-        │      Include Module  Define Module          │
-        │            │             │                  │
-        │            │      ifdef/endif Module        │
-        │            │             │                  │
-        └────────────┴─────────────┴──────────────────┘
-                            │
-                            ▼
-                     Output File
-```
-
-### Memory Flow
-```
-Stack:                          Heap:
-┌──────────────┐               ┌──────────────────┐
-│ main()       │               │ ParserState*     │
-│   ├─ argc    │               │   ├─ current_file│
-│   ├─ argv    │               │   ├─ output_file │
-│   └─ result  │               │   └─ macro_dict  │
-└──────────────┘               │                  │
-                               │ MacroDict*       │
-┌──────────────┐               │   ├─ entries[]   │
-│ ArgFlags*    │ ─────────────>│   └─ count       │
-│   ├─ ifile   │               └──────────────────┘
-│   ├─ ofile   │
-│   └─ flags   │
-└──────────────┘
-```
-
----
-
-## Input/Output Examples
-
-### Example 1: Basic Preprocessing
-
-**Input (input.c):**
+**Exemple:**
 ```c
-#define SIZE 10
-int arr[SIZE];
-// Comment
-```
-
-**Command:**
-```bash
-./preprocessor -c -d input.c output.c
-```
-
-**Output (output.c):**
-```c
-
-int arr[10];
-
-```
-
-### Example 2: With Includes
-
-**Input (main.c):**
-```c
+// Input: file.c
 #include "header.h"
-int x = MAX_VALUE;
+int main() {}
+
+// Sortida a output.c:
+[contingut de header.h aquí]
+int main() {}
 ```
 
-**Input (header.h):**
+---
+
+### 5. **MODULE DEFINE** (procés dins del parser)
+**Entrada:**
+- Detecta directiva `#define MACRO valor`
+- Llegeix el nom del macro i el seu valor
+
+**Sortida:**
+- No retorna res
+- Emmagatzema el macro a `MacroDict`
+- No escriu al fitxer de sortida (la directiva `#define` es descarta)
+- Usa el macro per a substitucions posteriores
+
+**Exemple:**
 ```c
-#define MAX_VALUE 100
+// Input: 
+#define PI 3.14159
+float area = PI * r * r;
+
+// Sortida:
+float area = 3.14159 * r * r;
 ```
 
-**Output:**
+---
+
+### 6. **MODULE IFDEF/ENDIF** (procés dins del parser)
+**Entrada:**
+- Detecta `#ifdef MACRO` o `#ifndef MACRO`
+- Comprova a `MacroDict` si el macro està definit
+- Processa recursivament fins trobar `#else` o `#endif`
+
+**Sortida:**
+- No retorna res
+- Escriu al fitxer de sortida:
+  - Si la condició és certa: escriu el bloc `#ifdef`
+  - Si la condició és falsa: descarta el bloc (o escriu el `#else`)
+- Les directives `#ifdef`, `#else`, `#endif` NO es copien
+
+**Exemple:**
 ```c
-
-#define MAX_VALUE 100
-
-int x = 100;
-```
-
-### Example 3: Conditional Compilation
-
-**Input:**
-```c
+// Input:
 #define DEBUG
 #ifdef DEBUG
-    printf("Debug\n");
+    printf("Debug mode");
 #endif
-```
 
-**Output:**
-```c
-
-
-    printf("Debug\n");
-
+// Sortida:
+    printf("Debug mode");
 ```
 
 ---
 
-## Performance Metrics
+## Flux Complet d'Exemple
 
-### File Processing
 ```
-Input File Size:        10 KB
-Number of Lines:        300
-Number of Macros:       15
-Number of Includes:     5
-Processing Time:        < 100ms
-Output File Size:       ~12 KB (after expansion)
-```
+INPUT: preprocessor input.c output.c -c -d
 
-### Memory Usage
-```
-ParserState:            ~1 KB
-MacroDict:              ~1.3 MB (MAX_MACROS * sizeof(MacroEntry))
-Buffers:                ~8 KB (line buffers, word buffers)
-Total Peak Memory:      ~2 MB
+                          ┌──────────────────────┐
+                          │   MODULE ARGS        │
+                          │ processa: -c -d      │
+                          │ input: input.c       │
+                          │ output: output.c     │
+                          └──────────┬───────────┘
+                                     │
+                                     ▼
+                          ┌──────────────────────┐
+                          │   PARSER INIT        │
+                          │ obri fitxers         │
+                          │ crea ParserState     │
+                          └──────────┬───────────┘
+                                     │
+                                     ▼
+                          ┌──────────────────────────────────┐
+                          │   PARSE UNTIL (main loop)        │
+                          │ llegeix char per char            │
+                          │                                  │
+                          │  Detecta:                        │
+                          │  - '//' o '/*' → COMMENTS        │
+                          │  - '#include' → INCLUDE          │
+                          │  - '#define' → DEFINE            │
+                          │  - '#ifdef' → IFDEF/ENDIF        │
+                          │  - altres → escriu output        │
+                          │                                  │
+                          │ Crides recursives als mòduls    │
+                          └──────────┬───────────────────────┘
+                                     │
+                    ┌────┬────┬──────┴──────┬────┐
+                    ▼    ▼    ▼             ▼    ▼
+            ┌──────────────────┐  ┌──────────────────┐
+            │COMMENTS_REMOVE   │  │  INCLUDE         │
+            │Si -c: preserva   │  │  Lee: "file.h"   │
+            │Si -c no: descarta│  │  Processa        │
+            │No retorna res    │  │  recursivament   │
+            │Escriu output     │  │  No retorna res  │
+            │                  │  │  Escriu output   │
+            └──────────────────┘  └──────────────────┘
+            ┌──────────────────┐  ┌──────────────────┐
+            │  DEFINE          │  │  IFDEF/ENDIF     │
+            │Lee: MACRO valor  │  │  Check MacroDict │
+            │No retorna res    │  │  Si cert: inclou │
+            │Guarda MacroDict  │  │  Si fals: descarta
+            │No escriu output  │  │  No retorna res  │
+            │(descarta línea)  │  │  Escriu output   │
+            └──────────────────┘  └──────────────────┘
+                                     │
+                                     ▼
+                          ┌──────────────────────────┐
+                          │   OUTPUT FILE GENERATED  │
+                          │   (output.c)             │
+                          │   - Sense comentaris     │
+                          │   - Sense #include       │
+                          │   - Sense #ifdef blocs   │
+                          │   - Macros substituïts   │
+                          └──────────────────────────┘
 ```
 
 ---
 
-## Error Handling Flow
+## Taula Resum
 
-```
-Error Detection ──┐
-                  │
-                  ▼
-┌─────────────────────────────────────┐
-│       module_errors                 │
-│                                     │
-│  ├─> errors_init()                  │
-│  ├─> report_error()                 │
-│  ├─> errors_count()                 │
-│  └─> errors_finalize()              │
-└──────────────┬──────────────────────┘
-               │
-               ├──> Log to stderr
-               │
-               └──> Set exit code (return 1)
-```
-
-**Example Errors:**
-- File not found
-- Macro redefinition
-- Unmatched #ifdef/#endif
-- Invalid directive syntax
-- Memory allocation failure
+| Mòdul | Input | Output | Escriu? | Retorna |
+|-------|-------|--------|---------|---------|
+| **ARGS** | argc, argv | ArgFlags | Sí (stdout) | ArgFlags* |
+| **PARSER** | ifile, ofile, flags | ParserState | Sí (output file) | ParserState* |
+| **COMMENTS** | chars (/, *) | - | Sí/No (segons flag) | int (0/1) |
+| **INCLUDE** | "#include..." | - | Sí (content) | int |
+| **DEFINE** | "#define..." | MacroDict | Sí (MacroDict) | int |
+| **IFDEF** | "#ifdef..." | - | Sí (if block) | int |
+| **ERRORS** | Errors | - | Sí (stderr) | - |
 
 ---
 
-## Summary
+## Notes Importants
 
-**Inputs:**
-1. Command line arguments (flags, filenames)
-2. Input source file (.c)
-3. Included header files (.h)
+1. **Cap mòdul retorna dades pròpiament dit** - Tot s'escriu als fitxers o es guarda a estructures globals
+2. **El parser és el "controlador"** - Llija el fitxer i delega a cada mòdul
+3. **Els mòduls NO retornen strings o arrays** - Retornen códis d'error (int)
+4. **La MacroDict és compartida** - Tots els mòduls accedeixen a la mateixa `ParserState->macro_dict`
+5. **Les directives no van al output** - `#include`, `#define`, `#ifdef` es processen però NO es copien al fitxer de sortida
 
-**Processing:**
-1. Argument parsing → ArgFlags
-2. Parser initialization → ParserState + MacroDict
-3. Character-by-character parsing
-4. Directive processing (#include, #define, #ifdef)
-5. Comment removal (optional)
-6. Macro expansion
 
-**Outputs:**
-1. Processed source file (expanded, clean)
-2. Console messages (status, errors)
-3. Error codes (success/failure)
 
-El preprocessor transforma codi C amb directives i macros en codi C net i expandit, llest per ser compilat.
